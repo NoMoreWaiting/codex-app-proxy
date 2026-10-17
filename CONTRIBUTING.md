@@ -10,7 +10,7 @@
 
 ## 本地验证
 
-需要 Visual Studio 2022 C++ Build Tools、CMake 3.20+ 和 Node.js 18+：
+需要 Go 1.24+ 和 Node.js 18+（用于离线向导校验）。重新生成图标资源对象额外需要 `rsrc`，未安装时会沿用仓库内已提交的 `rsrc_windows_amd64.syso`：
 
 ```powershell
 .\build.ps1
@@ -23,7 +23,7 @@ node tests/verify-start-here.mjs resources/START-HERE.html resources/default_con
 git diff --check
 ```
 
-涉及启动器、配置、日志或发布包的改动，还应运行完整 C++ 测试并确认发布包仍只包含四个根目录文件。
+涉及启动器、配置、日志或发布包的改动，还应运行 `go vet ./...`、`go test ./... -count=1`，并确认发布包仍只包含四个根目录文件。
 
 ## 提交建议
 

@@ -11,3 +11,10 @@ dist/
 *.dll
 *.lib
 *.exp
+
+# 运行时产物：日志与用户配置由启动器生成
+proxy-*.log
+config.json
+
+# 本地工具的工作目录
+.workbuddy/

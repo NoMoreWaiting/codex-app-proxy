@@ -7,7 +7,6 @@
     "port": 10808
   },
   "bypass_list": [
-    "<-loopback>",
     "localhost",
     "127.0.0.1",
     "::1",

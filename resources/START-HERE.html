@@ -266,15 +266,48 @@
         <div id="status" class="status" role="status" aria-live="polite">当前配置有效。保存时请选择 CodexProxyLauncher.exe 所在文件夹。</div>
         <div id="nextSteps" class="next-steps">
           <strong>配置已生成，接下来：</strong>
-          <ol><li>确认代理软件正在运行且节点可用。</li><li>完全退出已有 ChatGPT/Codex，包括后台进程。</li><li>回到此文件夹，双击 CodexProxyLauncher.exe。</li></ol>
+          <ol><li>确认代理软件正在运行且节点可用。</li><li>回到此文件夹，双击 CodexProxyLauncher.exe。后台残留的旧实例会被自动结束，无需手动退出。</li><li>（可选）如果在 WSL 中运行 Codex，先按第 4 节生成 .env，并确认 WSL 是镜像网络。</li><li>若 App 提示「无法加载组织设置」，请阅读下方「新版 App 排错」。</li></ol>
         </div>
+      </section>
+
+      <section class="section" id="wsl-section">
+        <div class="section-heading">
+          <span class="section-number">4</span>
+          <div><h2>可选：为 WSL 生成 .env</h2><p>让 App 在 WSL 里执行命令时也用同一个代理。</p></div>
+        </div>
+        <p class="minor">新版 App 可以「在 WSL 中运行 Codex」（<code>%USERPROFILE%\.codex\config.toml</code> 中的 <code>runCodexInWindowsSubsystemForLinux = true</code>）。这时 Codex 会通过 <code>WSLENV</code> 把 <code>CODEX_HOME</code> 传进 WSL，WSL 内的进程读到的是 Windows 侧同一个 <code>.codex\.env</code>。放好这一个文件，就不必在 WSL 里重复配置代理。</p>
+        <div class="notice">
+          <strong>前提：WSL 网络必须是镜像模式。</strong>只有在 <code>networkingMode=mirrored</code> 下，WSL 里的 <code>127.0.0.1</code> 才指向 Windows 回环；默认的 NAT 模式下它指向 WSL 自己，代理会连不上，文件写得再对也没用。请在 <code>%USERPROFILE%\.wslconfig</code> 中加入：
+          <pre>[wsl2]
+networkingMode=mirrored</pre>
+          保存后执行 <code>wsl --shutdown</code> 使其生效（需要 Windows 11 22H2 及以上 + WSL 2.0 及以上）。确认当前模式：<code>wsl -e wslinfo --networking-mode</code>，输出 <code>mirrored</code> 才算对。
+        </div>
+        <p class="minor">如果你的 WSL 只能跑 NAT 模式，就把上方的代理地址从 <code>127.0.0.1</code> 改成 Windows 主机在 WSL 里的地址（WSL 内执行 <code>ip route show default | awk '{print $3}'</code>），并注意这个地址在重启后可能变化。</p>
+        <div class="action-row">
+          <button class="primary" id="saveEnv" type="button">生成 .env 并保存</button>
+          <button id="downloadEnv" type="button">普通下载 .env</button>
+          <button id="copyEnv" type="button">复制 .env 内容</button>
+        </div>
+        <div id="envStatus" class="status" role="status" aria-live="polite">保存位置必须是 C:\Users\&lt;你的用户名&gt;\.codex\.env。<code>.codex</code> 是隐藏目录：文件选择器里可以直接输入完整路径；也可以先保存到桌面再移动过去。</div>
+        <p class="minor"><strong>如果 .env 已经存在：</strong>请先备份，或只把下面这些行追加进去。直接覆盖会丢掉文件里已有的其它变量（例如 <code>OPENAI_API_KEY</code>）。每次修改代理端口后都要重新生成一次。</p>
+        <div class="code-block"><pre id="envOutput"></pre></div>
+      </section>
+
+      <section class="section" id="new-app-notes">
+        <div class="section-heading">
+          <span class="section-number">5</span>
+          <div><h2>新版 App 排错</h2><p>2026 年 9 月之后的版本多了一道「组织设置」加载。</p></div>
+        </div>
+        <p class="minor"><strong>卡在「无法加载组织设置」：</strong>新版启动时会先从服务端加载组织/工作区设置，拉不到就一直停在这个对话框，只能重试、退出登录或退出。最常见的原因是「本地直连列表」里写着 <code>&lt;-loopback&gt;</code>：它会取消浏览器对本地回环地址的绕过，让 App 自己的本地通信也走代理，于是组织设置永远拉不完。出厂配置已移除该项，启动器也会自动忽略旧配置里的这一项。</p>
+        <p class="minor"><strong>提示「配置的端口不是代理端口」：</strong>启动器现在会真的发一次 CONNECT / SOCKS5 握手，而不只是看端口是否打开。请填写代理软件显示的 mixed / HTTP 端口，不要填外部控制端口（API）或订阅端口。</p>
+        <p class="minor"><strong>不必手动退出 App：</strong>新版会注册开机自启并常驻后台，启动器会先结束同目录下的旧实例，再带参数冷启动。</p>
       </section>
 
       <details id="advanced">
         <summary>高级设置：日志、QUIC 与本地直连列表</summary>
         <div class="details-body">
           <div class="setting-row">
-            <div><h3>诊断日志 <span class="default-mark">出厂：仅错误时记录</span></h3><p class="minor"><strong>仅错误（推荐）</strong>：正常启动不创建日志目录，出错时才写入本次启动上下文。<br><strong>始终记录</strong>：从启动开始持续写入，适合反复排错。<br><strong>关闭</strong>：完全不写日志，错误弹窗会提示日志已关闭。</p><p class="minor">日志可能包含启动器与 App 路径、代理地址和错误信息；不会记录账号、对话内容或代理流量。分享日志前仍请自行检查。</p></div>
+            <div><h3>诊断日志 <span class="default-mark">出厂：仅错误时记录</span></h3><p class="minor"><strong>仅错误（推荐）</strong>：正常启动不生成日志文件，出错时才写入本次启动上下文。<br><strong>始终记录</strong>：从启动开始持续写入，适合反复排错。<br><strong>关闭</strong>：完全不写日志，错误弹窗会提示日志已关闭。</p><p class="minor">日志可能包含启动器与 App 路径、代理地址和错误信息；不会记录账号、对话内容或代理流量。分享日志前仍请自行检查。</p></div>
             <select id="logMode" aria-label="诊断日志模式"><option value="errors">仅错误（推荐）</option><option value="always">始终记录</option><option value="off">关闭</option></select>
           </div>
           <div class="setting-row">
@@ -337,7 +370,7 @@
   <script>
     const $ = id => document.getElementById(id);
     const DEFAULT_BYPASS = [
-      '<-loopback>', 'localhost', '127.0.0.1', '::1', '10.*',
+      'localhost', '127.0.0.1', '::1', '10.*',
       '172.16.*', '172.17.*', '172.18.*', '172.19.*', '172.20.*',
       '172.21.*', '172.22.*', '172.23.*', '172.24.*', '172.25.*',
       '172.26.*', '172.27.*', '172.28.*', '172.29.*', '172.30.*',
@@ -378,6 +411,29 @@
       return result;
     }
     function configText() { return JSON.stringify(currentConfig(), null, 2) + '\n'; }
+    function envText() {
+      const config = currentConfig();
+      const error = validate(config);
+      if (error) throw new Error(error);
+      const proxy = `${config.proxy.type}://${config.proxy.host}:${config.proxy.port}`;
+      return [
+        '# 由 START-HERE.html 生成，供 WSL 内的 Codex 读取',
+        '# 保存位置：C:\\Users\\<你的用户名>\\.codex\\.env',
+        '# 前提：WSL 使用镜像网络（%USERPROFILE%\\.wslconfig 中 networkingMode=mirrored），否则 127.0.0.1 不是 Windows 回环',
+        `no_proxy="localhost,127.0.0.1,::1"`,
+        `NO_PROXY="localhost,127.0.0.1,::1"`,
+        `http_proxy="${proxy}"`,
+        `https_proxy="${proxy}"`,
+        `ftp_proxy="${proxy}"`,
+        `rsync_proxy="${proxy}"`,
+        `all_proxy="${proxy}"`,
+        `HTTP_PROXY="${proxy}"`,
+        `HTTPS_PROXY="${proxy}"`,
+        `FTP_PROXY="${proxy}"`,
+        `RSYNC_PROXY="${proxy}"`,
+        `ALL_PROXY="${proxy}"`
+      ].join('\n') + '\n';
+    }
     function isFactory(config) {
       return config.proxy.type === FACTORY.type && config.proxy.host === FACTORY.host && config.proxy.port === FACTORY.port &&
         config.disable_quic === FACTORY.disableQuic && config.log_mode === FACTORY.logMode && JSON.stringify(config.bypass_list) === JSON.stringify(DEFAULT_BYPASS);
@@ -388,6 +444,8 @@
       const preset = PRESETS[$('preset').value];
       $('jsonOutput').textContent = JSON.stringify(config, null, 2);
       $('commandOutput').textContent = commandFor(config);
+      try { $('envOutput').textContent = envText(); }
+      catch { $('envOutput').textContent = '（请先修正上方的配置错误）'; }
       $('proxyValue').textContent = `${config.proxy.type}://${config.proxy.host || '未填写'}:${config.proxy.port || '未填写'}`;
       $('presetSummary').textContent = preset ? preset.label : '自定义';
       $('quicSummary').textContent = config.disable_quic ? '已禁用' : '允许使用';
@@ -435,15 +493,27 @@
       } catch (error) { showError(error.message); }
     }
     function showError(message) { $('status').textContent = message; $('status').className = 'status bad'; $('nextSteps').classList.remove('show'); }
-    async function copyText(value, label) {
+    async function copyText(value, label, target = 'status') {
       try {
         if (navigator.clipboard) await navigator.clipboard.writeText(value);
         else {
           const area = document.createElement('textarea'); area.value = value; area.style.position = 'fixed'; area.style.opacity = '0';
           document.body.appendChild(area); area.select(); document.execCommand('copy'); area.remove();
         }
-        $('status').textContent = `${label}已复制。`; $('status').className = 'status ok';
-      } catch { showError('复制失败，请手动选择内容复制。'); }
+        $(target).textContent = `${label}已复制。`; $(target).className = 'status ok';
+      } catch {
+        $(target).textContent = '复制失败，请手动选择内容复制。'; $(target).className = 'status bad';
+      }
+    }
+    function envStatus(message, ok) { $('envStatus').textContent = message; $('envStatus').className = ok ? 'status ok' : 'status bad'; }
+    function downloadEnvFile(text) {
+      try {
+        const blob = new Blob([text || envText()], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = '.env'; a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 0);
+        envStatus('已下载。若浏览器把文件名改成了 env 或 .env.txt，请手动改回 .env，再放进 C:\\Users\\<你的用户名>\\.codex\\。', true);
+      } catch (error) { envStatus(error.message, false); }
     }
 
     $('preset').addEventListener('change', () => {
@@ -457,6 +527,28 @@
     $('resetAll').addEventListener('click', () => apply(factoryConfig(), 'v2rayn'));
     $('resetBypass').addEventListener('click', () => { $('bypassList').value = DEFAULT_BYPASS.join('\n'); refresh(); });
     $('download').addEventListener('click', ordinaryDownload);
+    $('downloadEnv').addEventListener('click', () => {
+      try { downloadEnvFile(envText()); } catch (error) { envStatus(error.message, false); }
+    });
+    $('copyEnv').addEventListener('click', () => {
+      try { copyText(envText(), '.env 内容', 'envStatus'); } catch (error) { envStatus(error.message, false); }
+    });
+    $('saveEnv').addEventListener('click', async () => {
+      let text;
+      try { text = envText(); } catch (error) { return envStatus(error.message, false); }
+      if (!window.showSaveFilePicker) return downloadEnvFile(text);
+      try {
+        // No `types` filter on purpose: a leading-dot name such as `.env` can be
+        // rejected by the extension check, so let the user name it freely.
+        const handle = await window.showSaveFilePicker({ suggestedName: '.env' });
+        const writable = await handle.createWritable();
+        await writable.write(text);
+        await writable.close();
+        envStatus('.env 已保存。确认它在 C:\\Users\\<你的用户名>\\.codex\\ 下，然后执行 wsl --shutdown 并重新启动 App。', true);
+      } catch (error) {
+        if (error.name !== 'AbortError') downloadEnvFile(text);
+      }
+    });
     $('save').addEventListener('click', async () => {
       if (!window.showSaveFilePicker) return ordinaryDownload();
       try {

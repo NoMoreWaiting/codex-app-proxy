@@ -1,0 +1,5 @@
+# 二进制资源：标记为非文本，禁止行尾转换，也不参与 diff
+*.syso binary
+*.ico binary
+*.exe binary
+*.png binary

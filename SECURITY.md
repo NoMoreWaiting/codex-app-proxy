@@ -8,7 +8,7 @@
 
 请通过 GitHub 的私密 Security Advisory 渠道报告可能导致代码执行、任意文件写入、敏感信息泄露或发布供应链风险的问题：
 
-<https://github.com/leisair/codex-app-proxy/security/advisories/new>
+<https://github.com/NoMoreWaiting/codex-app-proxy/security/advisories/new>
 
 不要在公开 Issue 中粘贴账号信息、代理订阅、访问令牌、完整诊断日志或其他敏感数据。
 
